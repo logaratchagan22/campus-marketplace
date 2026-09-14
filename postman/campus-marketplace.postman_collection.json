@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "Campus Marketplace API",
+    "description": "Auth, CRUD, search/filter/pagination, and status-update tests for the Campus Marketplace backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" },
+    { "key": "listingId", "value": "" },
+    { "key": "conversationId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Asha Rao\",\n  \"email\": \"asha@example.edu\",\n  \"password\": \"password123\",\n  \"campus\": \"North Campus\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register - duplicate email (expect 409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Asha Rao\",\n  \"email\": \"asha@example.edu\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) { pm.collectionVariables.set('token', data.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@example.edu\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login - wrong password (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"asha@example.edu\",\n  \"password\": \"wrongpassword\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get current user (/me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Listings",
+      "item": [
+        {
+          "name": "Create listing without token (expect 401)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/listings",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Used cycle", "type": "text" },
+                { "key": "description", "value": "Good condition", "type": "text" },
+                { "key": "price", "value": "2500", "type": "text" },
+                { "key": "category", "value": "cycles", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create listing (with photo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.listing) { pm.collectionVariables.set('listingId', data.listing._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/listings",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Used Data Structures textbook", "type": "text" },
+                { "key": "description", "value": "4th edition, some highlighting", "type": "text" },
+                { "key": "price", "value": "450", "type": "text" },
+                { "key": "quantity", "value": "2", "type": "text" },
+                { "key": "category", "value": "books", "type": "text" },
+                { "key": "condition", "value": "good", "type": "text" },
+                { "key": "photos", "type": "file", "src": [] }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Browse listings (default, available only)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/listings" }
+        },
+        {
+          "name": "Search listings (q=textbook)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/listings?q=textbook" }
+        },
+        {
+          "name": "Filter by category + price range",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/listings?category=books&minPrice=100&maxPrice=500"
+          }
+        },
+        {
+          "name": "Paginate (page=1&limit=2)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/listings?page=1&limit=2" }
+        },
+        {
+          "name": "Sort by price ascending",
+          "request": { "method": "GET", "url": "{{baseUrl}}/listings?sort=price_asc" }
+        },
+        {
+          "name": "Get single listing",
+          "request": { "method": "GET", "url": "{{baseUrl}}/listings/{{listingId}}" }
+        },
+        {
+          "name": "My listings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/listings/mine"
+          }
+        },
+        {
+          "name": "Update listing (owner)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/listings/{{listingId}}",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "price", "value": "400", "type": "text" }]
+            }
+          }
+        },
+        {
+          "name": "Mark listing as sold",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/listings/{{listingId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"sold\" }" }
+          }
+        },
+        {
+          "name": "Update status without token (expect 401)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/listings/{{listingId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"sold\" }" }
+          }
+        },
+        {
+          "name": "Delete listing (owner)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/listings/{{listingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "item": [
+        {
+          "name": "I'm interested (buyer starts a chat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.conversation) { pm.collectionVariables.set('conversationId', data.conversation._id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/conversations",
+            "body": { "mode": "raw", "raw": "{ \"listingId\": \"{{listingId}}\" }" }
+          }
+        },
+        {
+          "name": "Get my inbox",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/conversations"
+          }
+        },
+        {
+          "name": "Send a message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages",
+            "body": { "mode": "raw", "raw": "{ \"text\": \"Is this still available?\" }" }
+          }
+        },
+        {
+          "name": "Read messages in a thread",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages"
+          }
+        },
+        {
+          "name": "Read a conversation you're not part of (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/conversations/000000000000000000000000/messages"
+          }
+        },
+        {
+          "name": "After marking sold, thread should 404",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/conversations/{{conversationId}}/messages"
+          }
+        }
+      ]
+    }
+  ]
+}
