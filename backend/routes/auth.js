@@ -177,4 +177,21 @@ router.get("/me", protect, async (req, res) => {
 });
 
 module.exports = router;
+// @route   GET /api/auth/users
+// @desc    Get all users (Admin only)
+router.get("/users", protect, async (req, res, next) => {
+  try {
+    // Check if the current user is an admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+
+    // Fetch all users but DO NOT include passwords
+    const users = await User.find({}).select("name email role createdAt");
+    res.json({ users });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
