@@ -147,12 +147,20 @@ router.post("/login", async (req, res, next) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // --- AUTOMATIC DEV ADMIN UPGRADE PATCH ---
-    // Change "your-email@example.com" to your actual marketplace logging email address!
-    if (user.email === "your-email@example.com") {
+    // // --- AUTOMATIC DEV ADMIN UPGRADE PATCH ---
+    // // Change "your-email@example.com" to your actual marketplace logging email address!
+    // if (user.email === "your-email@example.com") {
+    //   user.role = "admin";
+    //   await user.save();
+    // }
+        // --- AUTOMATIC DEV ADMIN UPGRADE PATCH ---
+    // This safely checks a hidden environment variable instead of revealing your email!
+    if (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL.toLowerCase()) {
       user.role = "admin";
       await user.save();
     }
+    // ------------------------------------------
+
     // ------------------------------------------
 
     const token = signToken(user._id);
