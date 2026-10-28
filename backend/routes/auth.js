@@ -512,8 +512,83 @@ router.get("/users", protect, async (req, res, next) => {
   }
 });
 
+// // @route   POST /api/auth/forgot-password
+// // @desc    Generate a random 6-digit OTP and send it directly to the user's real email address via Brevo API
+// router.post("/forgot-password", async (req, res, next) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) {
+//       return res.status(400).json({ message: "Email is required" });
+//     }
+
+//     const user = await User.findOne({ email: email.toLowerCase() });
+//     if (!user) {
+//       return res.status(404).json({ message: "No account found with that email" });
+//     }
+
+//     // Generate a 6-digit random number
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+//     // Save OTP to user document (valid for 10 minutes)
+//     user.resetOtp = otp;
+//     user.resetOtpExpires = Date.now() + 10 * 60 * 1000;
+//     await user.save();
+
+//     // --- LIVE EMAIL SENDING VIA BREVO HTTPS API ---
+//     const brevoKey = process.env.BREVO_API_KEY;
+    
+//     if (brevoKey) {
+//       await fetch("https://brevo.com", {
+//         method: "POST",
+//         headers: {
+//           "accept": "application/json",
+//           "api-key": brevoKey,
+//           "content-type": "application/json"
+//         },
+//         body: JSON.stringify({
+//           sender: { 
+//             name: "Campus Marketplace Security", 
+//             email: "security@campusmarketplace.local"
+//           },
+//           to: [{ 
+//             email: user.email, 
+//             name: user.name 
+//           }],
+//           subject: "Your Account Password Reset OTP Verification Code",
+//           htmlContent: `
+//             <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e4e4e7; border-radius: 8px;">
+//               <h2 style="color: #15803d; border-bottom: 2px solid #15803d; padding-bottom: 10px;">Account Password Reset Request</h2>
+//               <p>Hi ${user.name},</p>
+//               <p>We received a request to reset your password for your Campus Marketplace account. Use the verification code below to proceed:</p>
+//               <div style="background: #f4f4f5; padding: 15px; text-align: center; border-radius: 6px; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #15803d; border: 1px solid #e4e4e7; margin: 20px 0;">
+//                 ${otp}
+//               </div>
+//               <p style="font-size: 12px; color: #666; line-height: 1.5;">This security token code is active and valid for the next 10 minutes only. If you did not make this request, you can safely ignore this email.</p>
+//             </div>
+//           `
+//         })
+//       });
+      
+//       console.log(`✉️ Live OTP Email dispatched successfully via Brevo to: ${user.email}`);
+//     } else {
+//       // Fallback log backup if your environment variable hasn't loaded yet
+//       console.log("⚠️ BREVO_API_KEY variable is missing on Render. Falling back to terminal log:");
+//       console.log("=========================================");
+//       console.log(`🔒 SECURITY SYSTEM OTP FOR: ${user.email}`);
+//       console.log(`YOUR ONE-TIME PASSWORD IS: ${otp}`);
+//       console.log("=========================================");
+//     }
+//     // ----------------------------------------------------
+
+//     res.json({ message: "A secure verification OTP code has been sent directly to your registered email account inbox." });
+//   } catch (err) {
+//     next(err);
+//   }
+// });
 // @route   POST /api/auth/forgot-password
 // @desc    Generate a random 6-digit OTP and send it directly to the user's real email address via Brevo API
+const axios = require("axios"); // Make sure to keep this require at the top or inside the route!
+
 router.post("/forgot-password", async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -526,57 +601,50 @@ router.post("/forgot-password", async (req, res, next) => {
       return res.status(404).json({ message: "No account found with that email" });
     }
 
-    // Generate a 6-digit random number
+    // Generate a secure 6-digit random number
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Save OTP to user document (valid for 10 minutes)
+    // Save OTP configuration to user document (valid for 10 minutes)
     user.resetOtp = otp;
     user.resetOtpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    // --- LIVE EMAIL SENDING VIA BREVO HTTPS API ---
+    // --- LIVE EMAIL SENDING VIA BREVO API ---
     const brevoKey = process.env.BREVO_API_KEY;
     
     if (brevoKey) {
-      await fetch("https://brevo.com", {
-        method: "POST",
+      await axios.post("https://brevo.com", {
+        sender: { 
+          name: "Campus Marketplace Security", 
+          email: "security@campusmarketplace.local"
+        },
+        to: [{ 
+          email: user.email, 
+          name: user.name 
+        }],
+        subject: "Your Account Password Reset OTP Verification Code",
+        htmlContent: `
+          <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e4e4e7; border-radius: 8px;">
+            <h2 style="color: #15803d; border-bottom: 2px solid #15803d; padding-bottom: 10px;">Account Password Reset Request</h2>
+            <p>Hi ${user.name},</p>
+            <p>We received a request to reset your password for your Campus Marketplace account. Use the verification code below to proceed:</p>
+            <div style="background: #f4f4f5; padding: 15px; text-align: center; border-radius: 6px; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #15803d; border: 1px solid #e4e4e7; margin: 20px 0;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #666; line-height: 1.5;">This security token code is active and valid for the next 10 minutes only. If you did not make this request, you can safely ignore this email.</p>
+          </div>
+        `
+      }, {
         headers: {
           "accept": "application/json",
           "api-key": brevoKey,
           "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          sender: { 
-            name: "Campus Marketplace Security", 
-            email: "security@campusmarketplace.local"
-          },
-          to: [{ 
-            email: user.email, 
-            name: user.name 
-          }],
-          subject: "Your Account Password Reset OTP Verification Code",
-          htmlContent: `
-            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #e4e4e7; border-radius: 8px;">
-              <h2 style="color: #15803d; border-bottom: 2px solid #15803d; padding-bottom: 10px;">Account Password Reset Request</h2>
-              <p>Hi ${user.name},</p>
-              <p>We received a request to reset your password for your Campus Marketplace account. Use the verification code below to proceed:</p>
-              <div style="background: #f4f4f5; padding: 15px; text-align: center; border-radius: 6px; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #15803d; border: 1px solid #e4e4e7; margin: 20px 0;">
-                ${otp}
-              </div>
-              <p style="font-size: 12px; color: #666; line-height: 1.5;">This security token code is active and valid for the next 10 minutes only. If you did not make this request, you can safely ignore this email.</p>
-            </div>
-          `
-        })
+        }
       });
       
       console.log(`✉️ Live OTP Email dispatched successfully via Brevo to: ${user.email}`);
     } else {
-      // Fallback log backup if your environment variable hasn't loaded yet
-      console.log("⚠️ BREVO_API_KEY variable is missing on Render. Falling back to terminal log:");
-      console.log("=========================================");
-      console.log(`🔒 SECURITY SYSTEM OTP FOR: ${user.email}`);
-      console.log(`YOUR ONE-TIME PASSWORD IS: ${otp}`);
-      console.log("=========================================");
+      console.log("⚠️ BREVO_API_KEY variable is missing on Render.");
     }
     // ----------------------------------------------------
 
@@ -585,6 +653,7 @@ router.post("/forgot-password", async (req, res, next) => {
     next(err);
   }
 });
+
 
 // @route   POST /api/auth/verify-otp
 // @desc    Verify if the OTP supplied by the user is valid and active
