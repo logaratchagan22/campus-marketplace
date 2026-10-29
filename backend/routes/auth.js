@@ -2074,7 +2074,7 @@ router.post("/forgot-password", async (req, res, next) => {
     
     if (brevoKey) {
       // ✅ FIXED: Changed target endpoint URL to Brevo's live transactional email route
-      await axios.post("https://brevo.com", {
+      await axios.post("https://api.brevo.com/v3/smtp/email", {
         sender: { 
           name: "Campus Marketplace Security", 
           email: "security@campusmarketplace.local"
