@@ -182,20 +182,34 @@ const userSchema = new mongoose.Schema(
     },
 
     // Signup email verification
+    // isEmailVerified: {
+    //   type: Boolean,
+    //   default: false,
+    // },
+    // signupOtp: {
+    //   type: String,
+    //   default: null,
+    //   select: false,
+    // },
+    // signupOtpExpires: {
+    //   type: Date,
+    //   default: null,
+    //   select: false,
+    // },
     isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    signupOtp: {
-      type: String,
-      default: null,
-      select: false,
-    },
-    signupOtpExpires: {
-      type: Date,
-      default: null,
-      select: false,
-    },
+  type: Boolean,
+  default: true, // Preserve existing accounts
+},
+signupOtp: {
+  type: String,
+  default: null,
+  select: false,
+},
+signupOtpExpires: {
+  type: Date,
+  default: null,
+  select: false,
+},
 
     // Forgot Password verification (existing)
     resetOtp: {
