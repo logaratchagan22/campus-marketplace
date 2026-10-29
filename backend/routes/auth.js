@@ -2077,7 +2077,7 @@ router.post("/forgot-password", async (req, res, next) => {
       await axios.post("https://api.brevo.com/v3/smtp/email", {
         sender: { 
           name: "Campus Marketplace Security", 
-          email: "security@campusmarketplace.local"
+          email: process.env.BREVO_SENDER_EMAIL
         },
         to: [{ 
           email: user.email, 
