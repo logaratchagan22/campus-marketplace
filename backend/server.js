@@ -10,19 +10,42 @@
 // }
 
 // start();
+// require("dotenv").config();
+// const connectDB = require("./config/db");
+// const app = require("./app");
+
+// // Render sets process.env.PORT to 10000 automatically. We default to 10000 to pass the port check.
+// const PORT = process.env.PORT || 10000;
+
+// async function start() {
+//   await connectDB();
+//   // Binds the app to host 0.0.0.0 so Render can detect and route public HTTP traffic to it
+//   app.listen(PORT, "0.0.0.0", () => {
+//     console.log(`Server running on host 0.0.0.0 and listening on port ${PORT}`);
+//   });
+// }
+
+// start();
+
 require("dotenv").config();
 const connectDB = require("./config/db");
 const app = require("./app");
 
-// Render sets process.env.PORT to 10000 automatically. We default to 10000 to pass the port check.
+// Render injects 10000 automatically. We listen on process.env.PORT or default to 10000.
 const PORT = process.env.PORT || 10000;
 
 async function start() {
-  await connectDB();
-  // Binds the app to host 0.0.0.0 so Render can detect and route public HTTP traffic to it
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on host 0.0.0.0 and listening on port ${PORT}`);
-  });
+  try {
+    await connectDB();
+    
+    // Explicitly bind to '0.0.0.0' so Render can detect and route public HTTP traffic
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Production server running on host 0.0.0.0 and listening on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Database connection or server initialization failed:", error);
+    process.exit(1);
+  }
 }
 
 start();
