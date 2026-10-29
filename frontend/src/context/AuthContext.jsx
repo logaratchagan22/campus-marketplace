@@ -1,4 +1,63 @@
-import { createContext, useContext, useEffect, useState } from "react";
+// import { createContext, useContext, useEffect, useState } from "react";
+// import api from "../api/client";
+
+// const AuthContext = createContext(null);
+
+// export function AuthProvider({ children }) {
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+
+//   // On first load, if a token is stored, verify it's still valid
+//   useEffect(() => {
+//     const token = localStorage.getItem("token");
+//     if (!token) {
+//       setLoading(false);
+//       return;
+//     }
+//     api
+//       .get("/auth/me")
+//       .then((res) => setUser(res.data.user))
+//       .catch(() => localStorage.removeItem("token"))
+//       .finally(() => setLoading(false));
+//   }, []);
+
+//   async function login(email, password) {
+//     const res = await api.post("/auth/login", { email, password });
+//     localStorage.setItem("token", res.data.token);
+//     setUser(res.data.user);
+//   }
+
+//   async function register(name, email, password, campus) {
+//     const res = await api.post("/auth/register", { name, email, password, campus });
+//     localStorage.setItem("token", res.data.token);
+//     setUser(res.data.user);
+//   }
+
+//   function logout() {
+//     localStorage.removeItem("token");
+//     setUser(null);
+//   }
+
+//   return (
+//     <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// }
+
+// export function useAuth() {
+//   const ctx = useContext(AuthContext);
+//   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+//   return ctx;
+// }
+
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import api from "../api/client";
 
 const AuthContext = createContext(null);
@@ -7,30 +66,57 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On first load, if a token is stored, verify it's still valid
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       setLoading(false);
       return;
     }
+
     api
       .get("/auth/me")
       .then((res) => setUser(res.data.user))
-      .catch(() => localStorage.removeItem("token"))
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email, password) {
-    const res = await api.post("/auth/login", { email, password });
+    const res = await api.post("/auth/login", {
+      email,
+      password,
+    });
+
     localStorage.setItem("token", res.data.token);
     setUser(res.data.user);
+
+    return res.data;
   }
 
-  async function register(name, email, password, campus) {
-    const res = await api.post("/auth/register", { name, email, password, campus });
+  async function register(name, email, password) {
+    // The backend sends an OTP but does not return a login token.
+    const res = await api.post("/auth/register", {
+      name,
+      email,
+      password,
+    });
+
+    return res.data;
+  }
+
+  async function verifySignup(email, otp) {
+    const res = await api.post("/auth/verify-signup-otp", {
+      email,
+      otp,
+    });
+
     localStorage.setItem("token", res.data.token);
     setUser(res.data.user);
+
+    return res.data;
   }
 
   function logout() {
@@ -39,7 +125,16 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        verifySignup,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -47,6 +142,12 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
+
+  if (!ctx) {
+    throw new Error(
+      "useAuth must be used within an AuthProvider"
+    );
+  }
+
   return ctx;
 }
